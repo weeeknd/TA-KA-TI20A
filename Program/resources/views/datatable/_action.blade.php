@@ -1,1 +1,0 @@
-<a href="{{ $show_url }}"class="btn btn-xs btn-warning"><i class="fa fa-eye"></i> Lihat</a>

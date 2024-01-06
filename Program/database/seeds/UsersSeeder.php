@@ -1,8 +1,8 @@
 <?php
 
 use Illuminate\Database\Seeder;
-use App\Role;
-use App\User;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 class UsersSeeder extends Seeder
 {
@@ -13,46 +13,14 @@ class UsersSeeder extends Seeder
      */
     public function run()
     {
-        //Membuat role admin
-        $adminRole = new Role();
-        $adminRole->name = "admin";
-        $adminRole->display_name = "Admin";
-        $adminRole->save();
-
-        //Membuat role siswa
-        $siswaRole = new Role();
-        $siswaRole->name = "siswa";
-        $siswaRole->display_name = "Siswa";
-        $siswaRole->save();
-
-        //Membuat role guru
-        $guruRole = new Role();
-        $guruRole->name = "guru";
-        $guruRole->display_name = "Guru";
-        $guruRole->save();
-
-        //Membuat sample admin
-        $admin = new User();
-        $admin->name = 'Admin Sekolah';
-        $admin->email = 'admin@sman3tgr.sch.id';
-        $admin->password = bcrypt('rahasia');
-        $admin->save();
-        $admin->attachRole($adminRole);
-
-        //Membuat sample siswa
-        $siswa = new User();
-        $siswa->name = 'Sample Siswa';
-        $siswa->email = 'siswa@sman3tgr.sch.id';
-        $siswa->password = bcrypt('rahasia');
-        $siswa->save();
-        $siswa->attachRole($siswaRole);
-
-        //Membuat sample siswa
-        $guru = new User();
-        $guru->name = 'Sample Guru';
-        $guru->email = 'guru@sman3tgr.sch.id';
-        $guru->password = bcrypt('rahasia');
-        $guru->save();
-        $guru->attachRole($guruRole);
+        DB::table('users')->insert([
+            'id' => 1,
+            'name' => 'Admin',
+            'email' => 'admin@gmail.com',
+            'password' => Hash::make('12345678'),
+            'role' => 'Admin',
+            'created_at' => date('Y-m-d H:i:s'),
+            'updated_at' => date('Y-m-d H:i:s')
+        ]);
     }
 }
