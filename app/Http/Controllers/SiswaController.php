@@ -2,177 +2,260 @@
 
 namespace App\Http\Controllers;
 
-use App\Agama;
-use App\Civitas;
-use App\Kelas;
-use App\Siswa;
-use App\TahunAjaran;
-use App\Wilayah;
 use Illuminate\Http\Request;
 
+use App\Http\Requests;
+use Yajra\Datatables\Html\Builder;
+use Yajra\Datatables\Datatables;
+use App\Siswa;
+use Session;
+use Excel;
+use Validator;
+use Auth;
+use PDF;
 class SiswaController extends Controller
 {
-    public function seeAll()
+    public function __construct()
     {
-        $students = Siswa::all();
-        $data_student = array();
-        foreach ($students as $student) {
-            $civitas = $student->civitas;
-            // dd($civitas);
-            array_push($data_student, array(
-                'id' => $student->id,
-                'name' => $civitas->nama,
-                'nisn' => $student->nisn,
-                'region' => $student->wilayah->nama_daerah
-            ));
-        }
-
-        return view('siswa/data_siswa', [
-            'regions' => Wilayah::all(),
-            'schoolYears' => TahunAjaran::all(),
-            'students' => $data_student
-        ]);
+        $this->middleware('auth');
     }
 
-    public function searchStudent(Request $request)
+    public function index(Request $request, Builder $htmlBuilder)
     {
-        $request->validate(
-            [
-                'year' => 'numeric',
-                'region' => 'numeric',
-                'class' => 'numeric'
-            ],
-            [
-                'year.numeric' => 'Tolong sertakan id tahun ajaran',
-                'class.numeric' => 'Tolong sertakan id kelas',
-                'region.numeric' => 'Tolong sertakan id wilayah'
-            ]
-        );
-
-        // jika ada kelas
-        if ($request->has('class')) {
-            $kelas = Kelas::find($request->class);
-            $kode_kelas = str_split($kelas->kode_kelas);
-            if ($kode_kelas[0] == '7') {
-                $students = $kelas->siswa1;
-            } elseif ($kode_kelas[0] == '8') {
-                $students = $kelas->siswa2;
-            } elseif ($kode_kelas[0] == '9') {
-                $students = $kelas->siswa3;
-            }
-
-            // jika ada class dan selanjutnya wilayah
-            if ($request->has('region')) {
-                // filter data hasil sebelumnya sesuai wilayah
-                $region_id = $request->region;
-                $students = $students->filter(function ($value, $key) use ($region_id) {
-                    return $value->wilayah_id == $region_id;
-                });
-
-                // kalau ada wilayah, set search param tahun, kelas, dan wilayah
-                $searchParam = array(
-                    'year' => TahunAjaran::find($request->year),
-                    'class' => Kelas::find($request->class),
-                    'region' => Wilayah::find($request->region)
-                );
-            } else {
-                // kalau gak ada wilayah, set search param cuma tahun dan kelas
-                $searchParam = array(
-                    'year' => TahunAjaran::find($request->year),
-                    'class' => Kelas::find($request->class),
-                );
-            }
-        } else { // kalo gak ada kelas dan cuma berdasarkan wilayah
-            $region = Wilayah::find($request->region);
-            $students = $region->siswa;
-
-            // set search param cuma wilayah
-            $searchParam = array(
-                'region' => Wilayah::find($request->region)
-            );
+        if ($request->ajax()) {
+            $siswa = Siswa::select(['id','kode_map', 'nama_siswa', 'jenis_kelamin', 'tempat_lahir', 'tgl_lahir','created_at', 'updated_at']);
+            return Datatables::of($siswa)
+                ->addColumn('action', function($murid) {
+                    return view('datatable._action', [
+                        'show_url'  => route('siswa.show', $murid->id),
+                    ]);
+                })
+                ->editColumn('tgl_lahir', function ($murid) {
+                    return $murid->tgl_lahir->format('d-m-Y');
+                })
+                ->filterColumn('tgl_lahir', function ($query, $keyword) {
+                    $query->whereRaw("DATE_FORMAT(updated_at,'%d-%m-%Y') like ?", ["%$keyword%"]);
+                })
+                ->make(true);
         }
 
-        $data_student = array();
-        foreach ($students as $student) {
-            $civitas = $student->civitas;
-            array_push($data_student, array(
-                'id' => $student->id,
-                'name' => $civitas->nama,
-                'nisn' => $student->nisn,
-                'region' => $student->wilayah->nama_daerah
-            ));
-        }
+        $html = $htmlBuilder
+            ->addColumn(['data' => 'kode_map', 'name'=>'kode_map', 'title'=>'Kode Map'])
+            ->addColumn(['data' => 'nama_siswa', 'name'=>'nama_siswa', 'title'=>'Nama Lengkap'])
+            ->addColumn(['data' => 'jenis_kelamin', 'name'=>'jenis_kelamin', 'title'=>'Jenis Kelamin'])
+            ->addColumn(['data' => 'tempat_lahir', 'name'=>'tempat_lahir', 'title'=>'Tempat Lahir'])
+            ->addColumn(['data' => 'tgl_lahir', 'name'=>'tgl_lahir', 'title'=>'Tanggal Lahir'])
+            ->addColumn(['data' => 'action', 'name'=>'action', 'title'=>'Action', 'orderable'=>false, 'searchable'=>false]);
 
-        return view('siswa/data_siswa', [
-            'regions' => Wilayah::all(),
-            'schoolYears' => TahunAjaran::all(),
-            'students' => $data_student,
-            'searchParam' => $searchParam
-        ]);
+        $jml_dfulang = \DB::table('siswa')->count('nama_siswa');
+        $jml_perempuan = \DB::table('siswa')->where('jenis_kelamin','=', 'Perempuan')->count();
+        $jml_laki = \DB::table('siswa')->where('jenis_kelamin','=', 'Laki-laki')->count();
+
+        return view('siswa.index', compact('html', 'jml_dfulang', 'jml_perempuan', 'jml_laki'));
+
     }
 
-    public function studentBiodata($id)
+    public function create()
     {
-        if ($id) {
-            $student = Siswa::find($id);
-            $civitas = $student->civitas;
-        } else {
-            return redirect()->back()->with('fail', 'Tidak bisa melihat biodata siswa, tidak ada id yang disertakan');
-        }
-        return view('siswa/biodata_siswa', [
-            'student' => $student,
-            'civitas' => $civitas,
-            'region' => $student->region,
-            'religion' => $civitas->agama
-        ]);
-    }
-
-    public function showCreatePage()
-    {
-        return view(
-            'siswa/create_data_siswa',
-            [
-                'religions' => Agama::all(),
-                'regions' => Wilayah::all(),
-                'classes' => Kelas::all()
-            ]
-        );
+        return view('siswa.create');
     }
 
     public function store(Request $request)
     {
-        $request->validate([
-            'nisn' => 'max:10',
-            'wilayah' => 'required|numeric',
-            'kelas_1' => 'required|numeric',
-            'kelas_2' => 'required|numeric',
-            'kelas_3' => 'required|numeric',
-            'status_aktif' => 'required|numeric',
-            'name' => 'required|min:3',
-            'jenis_kelamin' => 'required|numeric',
-            'tempat_lahir' => 'required|min:3',
-            'tanggal_lahir' => 'required|date',
-            'agama' => 'required|numeric',
+        $this->validate($request, [
+            'kode_map' => 'required',
+            'nama_siswa' => 'required'
+        ]);
+        $murid = Siswa::create($request->all());
+        Session::flash("flash_notification", [
+            "level"=>"success",
+            "message"=>"Berhasil menambah data siswa baru atas nama <b>$murid->nama_siswa</b>"
+        ]);
+        return view('siswa.show', compact('murid'));
+    }
+
+    public function show($id)
+    {
+    	$murid = Siswa::find($id);
+        return view('siswa.show', compact('murid'));
+    }
+
+    public function pdf(Request $request, $id)
+    {
+        $murid = Siswa::findOrFail($id);
+        return view('pdf', compact('murid'));
+        // $pdf = PDF::loadview('pdf', ['murid' => $murid]);
+        // $pdf->setPaper('Folio', 'potrait');
+        // return $pdf->stream('[$murid=>nama_siswa].pdf', array('Attachment' => 0));
+    }
+
+    public function edit($id)
+    {
+        $murid = Siswa::find($id);
+        return view('siswa.edit', compact('murid'));
+    }
+
+    public function update(Request $request, $id)
+    {
+        $murid = Siswa::find($id);
+        $murid->update($request->all());
+
+        Session::flash("flash_notification", [
+            "level"=>"success",
+            "message"=>"Berhasil update data <b>$murid->nama_siswa</b>"
+        ]);
+        return redirect()->route('siswa.show', $murid->id);
+    }
+
+    public function exportExcel()
+    {
+        $siswa = Siswa::select(['kode_map', 'no_un_smp', 'nama_siswa', 'jenis_kelamin', 'tempat_lahir', 'tgl_lahir','no_hp', 'nama_ayah', 'nama_ibu', 'no_hp', 'sekolah_asal'])->get();
+
+        Excel::create('Data Siswa', function($excel) use($siswa){
+            $excel->setTitle('Data Siswa')
+                ->setCreator(Auth::user()->name);
+
+            $excel->sheet('Data Siswa', function($sheet) use($siswa) {
+                $row = 1;
+                $sheet->row($row, [
+                    'Kode Map',
+                    'No. UN SMP',
+                    'Nama Lengkap',
+                    'Jenis Kelamin',
+                    'Tempat Lahir',
+                    'Tanggal Lahir',           
+                    'Nama Ayah',
+                    'Nama Ibu',
+                    'Nomor HP/Telepon',
+                    'Sekolah Asal'
+                ]);
+                foreach ($siswa as $murid) {
+                    $sheet->row(++$row, [
+                        $murid->kode_map,
+                        $murid->no_un_smp,
+                        $murid->nama_siswa,
+                        $murid->jenis_kelamin,
+                        $murid->tempat_lahir,
+                        $murid->tgl_lahir,           
+                        $murid->nama_ayah,
+                        $murid->nama_ibu,
+                        $murid->no_hp,
+                        $murid->sekolah_asal
+                    ]);
+                }
+            });
+        })->export('xls');
+    }
+
+    public function generateExcelTemplate()
+    {
+        Excel::create('Template Import Siswa', function($excel) {
+            //Set the properties
+            $excel->setTitle('Template Import Siswa')
+                  ->setCreator('Admin')
+                  ->setCompany('Admin')
+                  ->setDescription('Template import data siswa');
+
+            $excel->sheet('Data Siswa', function($sheet) {
+                $row = 1;
+                $sheet->row($row, [
+                    'kode_map',
+                    'no_un_smp',
+                    'nama_siswa',
+                    'jenis_kelamin',
+                    'tempat_lahir',
+                    'tgl_lahir',
+                    'nama_ayah',
+                    'nama_ibu',
+                    'no_hp',
+                    'sekolah_asal'
+                ]);
+            });
+        })->export('xlsx');
+    }
+
+    public function cetakPdf($id = null) {
+
+        $siswa = Siswa::select(['kode_map', 'no_un_smp', 'nama_siswa', 'jenis_kelamin', 'tempat_lahir', 'tgl_lahir','no_hp', 'nama_ayah', 'nama_ibu', 'no_hp', 'sekolah_asal'])->get();
+
+        $pdf = PDF::loadview('pdf.siswa', compact('siswa'));
+        return $pdf->stream();
+    }
+
+    public function importExcel(Request $request)
+    {
+        //validasi untuk memastikan file yang diupload adalah excel
+        $this->validate($request, ['excel' => 'required|mimes:xls,xlsx' ]);
+        //ambil file yang baru diupload
+        $excel = $request->file('excel');
+        //baca sheet pertama
+        $excels = Excel::selectSheetsByIndex(0)->load($excel, function($reader) {
+
+        })->get();
+
+        $rowRules = [
+            'kode_map'      => 'required',
+            'nama_siswa'    => 'required',
+        ];
+
+        //Catat semuda id siswa baru
+        //ID ini kita butuhkan untuk menghitung total buku yang berhasil diimport
+        $siswa_id = [];
+
+        //looping setiap baris, mulai dari baris ke 2 (karena baris ke 1 adalah nama kolom)
+        foreach ($excels as $row) {
+            //Mebuat validasi untuk row di excel
+            //Disini kita ubah baris yand sedang di proses menjadi array
+            $validator = Validator::make($row->toArray(), $rowRules);
+
+            //Skip baris ini jika tidak valid, langsung ke baris selanjutnya
+            if($validator->fails()) continue;
+
+            //Syntax dibawah ini dieksekusi jika baris excel ini valid
+
+            //Buat siswa baru
+            $murid = Siswa::create([
+                
+                'kode_map'      => $row['kode_map'],
+                'no_un_smp'     => $row['no_un_smp'],
+                'nama_siswa'    => $row['nama_siswa'],
+                'tempat_lahir'  => $row['tempat_lahir'],
+                'tgl_lahir'     => $row['tgl_lahir'],
+                'jenis_kelamin' => $row['jenis_kelamin'],
+                'nama_ayah'     => $row['nama_ayah'],
+                'nama_ibu'      => $row['nama_ibu'],
+                'no_hp'         => $row['no_hp'],
+                'sekolah_asal'  => $row['sekolah_asal']
+            ]);
+
+            //catat id dari buku yang baru dibuat
+            array_push($siswa_id, $murid->id);
+        }
+
+        //ambil semua siswa yang baru dibuat
+        $siswa = Siswa::whereIn('id', $siswa_id)->get();
+
+        //redirect ke form jika tidak ada buku yang berhasil diimport
+        if ($siswa->count() == 0) {
+            Session::flash("flash_notification", [
+                "level"     => "danger",
+                "message"   => "Tidak ada siswa yang berhasil diimport."
+            ]);
+            return redirect()->back();
+        }
+        //set feedback
+        Session::flash("flash_notification", [
+            "level"     => "success",
+            "message"   => "Berhasil mengimport " . $siswa->count() . " siswa."
+
         ]);
 
-        $student = Siswa::create([
-            'nisn' => $request->nisn,
-            'wilayah_id' => $request->wilayah,
-            'id_kelas_1' => $request->kelas_1,
-            'id_kelas_2' => $request->kelas_2,
-            'id_kelas_3' => $request->kelas_3,
-            'status_keaktifan' => $request->status_aktif
-        ]);
-        $civitas = new Civitas();
-        $civitas->fill([
-            'nama' => $request->name,
-            'jenis_kelamin' => $request->jenis_kelamin,
-            'tempat_lahir' => $request->tempat_lahir,
-            'tanggal_lahir' => $request->tanggal_lahir,
-            'agama_id' => $request->agama,
-        ]);
+        //Tampilkan index buku
+        return redirect()->route('siswa.index');
+    }
 
-        $student->civitas()->save($civitas);
-        return redirect()->route('student')->with('success', 'Data siswa berhasil dibuat');
+    public function biodata()
+    {
+        return view('biodata.create');
     }
 }
