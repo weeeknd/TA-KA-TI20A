@@ -70,11 +70,11 @@
                         <tr>
                             <th class="ctr">No.</th>
                             <th>Mata Pelajaran</th>
-                            <th class="ctr">ULHA 1</th>
-                            <th class="ctr">ULHA 2</th>
-                            <th class="ctr">UTS</th>
-                            <th class="ctr">ULHA 3</th>
-                            <th class="ctr">UAS</th>
+                            <th class="ctr">Ulangan Harian 1</th>
+                            <th class="ctr">Ulangan Harian 2</th>
+                            <th class="ctr">Ujian Tengah Semester</th>
+                            <th class="ctr">Ulangan Harian 3</th>
+                            <th class="ctr">Ujian Akhir Semester</th>
                         </tr>
                     </thead>
                     <tbody>

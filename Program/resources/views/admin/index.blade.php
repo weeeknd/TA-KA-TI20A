@@ -161,14 +161,14 @@
                         </div>
                         <div class="col-md-4">
                             <ul class="chart-legend clearfix">
-                                <li><i class="far fa-circle" style="color: #d4c148"></i> Desain Grafis/Multimedia </li>
-                                <li><i class="far fa-circle" style="color: #ba6906"></i> Rekayasa Perangkat Lunak</li>
-                                <li><i class="far fa-circle" style="color: #ff990a"></i> Administrasi Perkantoran</li>
-                                <li><i class="far fa-circle" style="color: #00a352"></i> Tata Boga</li>
+                                <li><i class="far fa-circle" style="color: #d4c132"></i> Desain Grafis/Multimedia </li>
+                                <li><i class="far fa-circle" style="color: #d00d11"></i> Rekayasa Perangkat Lunak</li>
+                                <li><i class="far fa-circle" style="color: #ff990b"></i> Administrasi Perkantoran</li>
+                                <li><i class="far fa-circle" style="color: #c530a9"></i> Tata Boga</li>
                                 <li><i class="far fa-circle" style="color: #2cabe6"></i> Tata Busana</li>
-                                <li><i class="far fa-circle" style="color: #999999"></i> Tata Rias dan Kecantikan</li>
-                                <li><i class="far fa-circle" style="color: #0b2e75"></i> Teknik Logistik</li>
-                                <li><i class="far fa-circle" style="color: #7980f7"></i> Kimia Analisis</li>
+                                <li><i class="far fa-circle" style="color: #999943"></i> Tata Rias dan Kecantikan</li>
+                                <li><i class="far fa-circle" style="color: #759ded"></i> Teknik Logistik</li>
+                                <li><i class="far fa-circle" style="color: #3adb8a"></i> Kimia Analisis</li>
                             </ul>
                         </div>
                     </div>

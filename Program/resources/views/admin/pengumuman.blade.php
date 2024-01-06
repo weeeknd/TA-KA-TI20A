@@ -1,7 +1,7 @@
 @extends('template_backend.home')
 @section('heading', 'Pengumuman')
 @section('page')
-  <li class="breadcrumb-item active">Pengumuman</li>
+  <li class="breadcrumb-item active">Pengumuman Sekolah</li>
 @endsection
 @section('content')
     <div class="col-md-12">
@@ -10,7 +10,7 @@
                 @csrf
                 <div class="card-header">
                     <button type="submit" name="submit" class="btn btn-outline-primary">
-                        Simpan &nbsp; <i class="nav-icon fas fa-save"></i>
+                        Simpan Berkas &nbsp; <i class="nav-icon fas fa-save"></i>
                     </button>
                     <div class="card-tools">
                         <button type="button" class="btn btn-tool btn-sm" data-card-widget="remove" data-toggle="tooltip" title="Remove">
