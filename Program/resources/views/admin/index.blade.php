@@ -168,7 +168,7 @@
                                 <li><i class="far fa-circle" style="color: #2cabe6"></i> Tata Busana</li>
                                 <li><i class="far fa-circle" style="color: #999999"></i> Tata Rias dan Kecantikan</li>
                                 <li><i class="far fa-circle" style="color: #0b2e75"></i> Teknik Logistik</li>
-                                <li><i class="far fa-circle" style="color: #7980f7"></i> Teknik Pengelasan</li>
+                                <li><i class="far fa-circle" style="color: #7980f7"></i> Kimia Analisis</li>
                             </ul>
                         </div>
                     </div>
