@@ -15,7 +15,7 @@
             <table class="table table-bordered table-striped table-hover">
                 <thead>
                     <tr>
-                        <th colspan="5" class="text-center">Jadwal Pelajaran Kelas {{ $kelas->nama_kelas }}</th>
+                        <th colspan="5" class="text-center">Jadwal Pelajaran Kelas Online {{ $kelas->nama_kelas }}</th>
                     </tr>
                     <tr>
                         <th>Hari</th>

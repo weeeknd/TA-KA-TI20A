@@ -1,7 +1,7 @@
 @extends('template_backend.home')
 @section('heading', 'Dashboard')
 @section('page')
-  <li class="breadcrumb-item active">Dashboard</li>
+  <li class="breadcrumb-item active">Dashboard Siswa</li>
 @endsection
 @section('content')
     <div class="col-md-12" id="load_content">
@@ -10,11 +10,11 @@
               <table class="table table-striped table-hover">
                 <thead>
                   <tr>
-                    <th>Jam Pelajaran</th>
+                    <th>Jam Mata Pelajaran</th>
                     <th>Mata Pelajaran</th>
                     <th>Kelas</th>
                     <th>Ruang Kelas</th>
-                    <th>Ket.</th>
+                    <th>Keterangan</th>
                   </tr>
                 </thead>
                 <tbody id="data-jadwal">
