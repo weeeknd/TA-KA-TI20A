@@ -25,7 +25,7 @@
       @yield('content')
     </div>
 
-    <footer style="color: white;">
+    <footer style="color: rgb(231, 231, 231);">
       <marquee>
           <strong>Copyright &copy; <script>document.write(new Date().getFullYear());</script> &diams; <a href="http://smkn1jenpo.sch.id/" style="color: white;">SMK Negeri 1 Jenangan Ponorogo</a>. </strong>
       </marquee>
