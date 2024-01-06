@@ -2,260 +2,292 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-
-use App\Http\Requests;
-use Yajra\Datatables\Html\Builder;
-use Yajra\Datatables\Datatables;
-use App\Siswa;
-use Session;
-use Excel;
-use Validator;
-use Auth;
 use PDF;
+use App\User;
+use App\Kelas;
+use App\Siswa;
+use App\Exports\SiswaExport;
+use App\Imports\SiswaImport;
+use Illuminate\Http\Request;
+use App\Http\Controllers\Controller;
+use Maatwebsite\Excel\Facades\Excel;
+use Illuminate\Support\Facades\Crypt;
+
 class SiswaController extends Controller
 {
-    public function __construct()
+    /**
+     * Display a listing of the resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
+    public function index()
     {
-        $this->middleware('auth');
+        $kelas = Kelas::OrderBy('nama_kelas', 'asc')->get();
+        return view('admin.siswa.index', compact('kelas'));
     }
 
-    public function index(Request $request, Builder $htmlBuilder)
-    {
-        if ($request->ajax()) {
-            $siswa = Siswa::select(['id','kode_map', 'nama_siswa', 'jenis_kelamin', 'tempat_lahir', 'tgl_lahir','created_at', 'updated_at']);
-            return Datatables::of($siswa)
-                ->addColumn('action', function($murid) {
-                    return view('datatable._action', [
-                        'show_url'  => route('siswa.show', $murid->id),
-                    ]);
-                })
-                ->editColumn('tgl_lahir', function ($murid) {
-                    return $murid->tgl_lahir->format('d-m-Y');
-                })
-                ->filterColumn('tgl_lahir', function ($query, $keyword) {
-                    $query->whereRaw("DATE_FORMAT(updated_at,'%d-%m-%Y') like ?", ["%$keyword%"]);
-                })
-                ->make(true);
-        }
-
-        $html = $htmlBuilder
-            ->addColumn(['data' => 'kode_map', 'name'=>'kode_map', 'title'=>'Kode Map'])
-            ->addColumn(['data' => 'nama_siswa', 'name'=>'nama_siswa', 'title'=>'Nama Lengkap'])
-            ->addColumn(['data' => 'jenis_kelamin', 'name'=>'jenis_kelamin', 'title'=>'Jenis Kelamin'])
-            ->addColumn(['data' => 'tempat_lahir', 'name'=>'tempat_lahir', 'title'=>'Tempat Lahir'])
-            ->addColumn(['data' => 'tgl_lahir', 'name'=>'tgl_lahir', 'title'=>'Tanggal Lahir'])
-            ->addColumn(['data' => 'action', 'name'=>'action', 'title'=>'Action', 'orderable'=>false, 'searchable'=>false]);
-
-        $jml_dfulang = \DB::table('siswa')->count('nama_siswa');
-        $jml_perempuan = \DB::table('siswa')->where('jenis_kelamin','=', 'Perempuan')->count();
-        $jml_laki = \DB::table('siswa')->where('jenis_kelamin','=', 'Laki-laki')->count();
-
-        return view('siswa.index', compact('html', 'jml_dfulang', 'jml_perempuan', 'jml_laki'));
-
-    }
-
+    /**
+     * Show the form for creating a new resource.
+     *
+     * @return \Illuminate\Http\Response
+     */
     public function create()
     {
-        return view('siswa.create');
+        // 
     }
 
+    /**
+     * Store a newly created resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @return \Illuminate\Http\Response
+     */
     public function store(Request $request)
     {
         $this->validate($request, [
-            'kode_map' => 'required',
-            'nama_siswa' => 'required'
+            'no_induk' => 'required|string|unique:siswa',
+            'nama_siswa' => 'required',
+            'jk' => 'required',
+            'kelas_id' => 'required'
         ]);
-        $murid = Siswa::create($request->all());
-        Session::flash("flash_notification", [
-            "level"=>"success",
-            "message"=>"Berhasil menambah data siswa baru atas nama <b>$murid->nama_siswa</b>"
+
+        if ($request->foto) {
+            $foto = $request->foto;
+            $new_foto = date('siHdmY') . "_" . $foto->getClientOriginalName();
+            $foto->move('uploads/siswa/', $new_foto);
+            $nameFoto = 'uploads/siswa/' . $new_foto;
+        } else {
+            if ($request->jk == 'L') {
+                $nameFoto = 'uploads/siswa/52471919042020_male.jpg';
+            } else {
+                $nameFoto = 'uploads/siswa/50271431012020_female.jpg';
+            }
+        }
+
+        Siswa::create([
+            'no_induk' => $request->no_induk,
+            'nis' => $request->nis,
+            'nama_siswa' => $request->nama_siswa,
+            'jk' => $request->jk,
+            'kelas_id' => $request->kelas_id,
+            'telp' => $request->telp,
+            'tmp_lahir' => $request->tmp_lahir,
+            'tgl_lahir' => $request->tgl_lahir,
+            'foto' => $nameFoto
         ]);
-        return view('siswa.show', compact('murid'));
+
+        return redirect()->back()->with('success', 'Berhasil menambahkan data siswa baru!');
     }
 
+    /**
+     * Display the specified resource.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
     public function show($id)
     {
-    	$murid = Siswa::find($id);
-        return view('siswa.show', compact('murid'));
+        $id = Crypt::decrypt($id);
+        $siswa = Siswa::findorfail($id);
+        return view('admin.siswa.details', compact('siswa'));
     }
 
-    public function pdf(Request $request, $id)
-    {
-        $murid = Siswa::findOrFail($id);
-        return view('pdf', compact('murid'));
-        // $pdf = PDF::loadview('pdf', ['murid' => $murid]);
-        // $pdf->setPaper('Folio', 'potrait');
-        // return $pdf->stream('[$murid=>nama_siswa].pdf', array('Attachment' => 0));
-    }
-
+    /**
+     * Show the form for editing the specified resource.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
     public function edit($id)
     {
-        $murid = Siswa::find($id);
-        return view('siswa.edit', compact('murid'));
+        $id = Crypt::decrypt($id);
+        $siswa = Siswa::findorfail($id);
+        $kelas = Kelas::all();
+        return view('admin.siswa.edit', compact('siswa', 'kelas'));
     }
 
+    /**
+     * Update the specified resource in storage.
+     *
+     * @param  \Illuminate\Http\Request  $request
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
     public function update(Request $request, $id)
     {
-        $murid = Siswa::find($id);
-        $murid->update($request->all());
-
-        Session::flash("flash_notification", [
-            "level"=>"success",
-            "message"=>"Berhasil update data <b>$murid->nama_siswa</b>"
+        $this->validate($request, [
+            'nama_siswa' => 'required',
+            'jk' => 'required',
+            'kelas_id' => 'required'
         ]);
-        return redirect()->route('siswa.show', $murid->id);
-    }
 
-    public function exportExcel()
-    {
-        $siswa = Siswa::select(['kode_map', 'no_un_smp', 'nama_siswa', 'jenis_kelamin', 'tempat_lahir', 'tgl_lahir','no_hp', 'nama_ayah', 'nama_ibu', 'no_hp', 'sekolah_asal'])->get();
-
-        Excel::create('Data Siswa', function($excel) use($siswa){
-            $excel->setTitle('Data Siswa')
-                ->setCreator(Auth::user()->name);
-
-            $excel->sheet('Data Siswa', function($sheet) use($siswa) {
-                $row = 1;
-                $sheet->row($row, [
-                    'Kode Map',
-                    'No. UN SMP',
-                    'Nama Lengkap',
-                    'Jenis Kelamin',
-                    'Tempat Lahir',
-                    'Tanggal Lahir',           
-                    'Nama Ayah',
-                    'Nama Ibu',
-                    'Nomor HP/Telepon',
-                    'Sekolah Asal'
-                ]);
-                foreach ($siswa as $murid) {
-                    $sheet->row(++$row, [
-                        $murid->kode_map,
-                        $murid->no_un_smp,
-                        $murid->nama_siswa,
-                        $murid->jenis_kelamin,
-                        $murid->tempat_lahir,
-                        $murid->tgl_lahir,           
-                        $murid->nama_ayah,
-                        $murid->nama_ibu,
-                        $murid->no_hp,
-                        $murid->sekolah_asal
-                    ]);
-                }
-            });
-        })->export('xls');
-    }
-
-    public function generateExcelTemplate()
-    {
-        Excel::create('Template Import Siswa', function($excel) {
-            //Set the properties
-            $excel->setTitle('Template Import Siswa')
-                  ->setCreator('Admin')
-                  ->setCompany('Admin')
-                  ->setDescription('Template import data siswa');
-
-            $excel->sheet('Data Siswa', function($sheet) {
-                $row = 1;
-                $sheet->row($row, [
-                    'kode_map',
-                    'no_un_smp',
-                    'nama_siswa',
-                    'jenis_kelamin',
-                    'tempat_lahir',
-                    'tgl_lahir',
-                    'nama_ayah',
-                    'nama_ibu',
-                    'no_hp',
-                    'sekolah_asal'
-                ]);
-            });
-        })->export('xlsx');
-    }
-
-    public function cetakPdf($id = null) {
-
-        $siswa = Siswa::select(['kode_map', 'no_un_smp', 'nama_siswa', 'jenis_kelamin', 'tempat_lahir', 'tgl_lahir','no_hp', 'nama_ayah', 'nama_ibu', 'no_hp', 'sekolah_asal'])->get();
-
-        $pdf = PDF::loadview('pdf.siswa', compact('siswa'));
-        return $pdf->stream();
-    }
-
-    public function importExcel(Request $request)
-    {
-        //validasi untuk memastikan file yang diupload adalah excel
-        $this->validate($request, ['excel' => 'required|mimes:xls,xlsx' ]);
-        //ambil file yang baru diupload
-        $excel = $request->file('excel');
-        //baca sheet pertama
-        $excels = Excel::selectSheetsByIndex(0)->load($excel, function($reader) {
-
-        })->get();
-
-        $rowRules = [
-            'kode_map'      => 'required',
-            'nama_siswa'    => 'required',
+        $siswa = Siswa::findorfail($id);
+        $user = User::where('no_induk', $siswa->no_induk)->first();
+        if ($user) {
+            $user_data = [
+                'name' => $request->nama_siswa
+            ];
+            $user->update($user_data);
+        } else {
+        }
+        $siswa_data = [
+            'nis' => $request->nis,
+            'nama_siswa' => $request->nama_siswa,
+            'jk' => $request->jk,
+            'kelas_id' => $request->kelas_id,
+            'telp' => $request->telp,
+            'tmp_lahir' => $request->tmp_lahir,
+            'tgl_lahir' => $request->tgl_lahir,
         ];
+        $siswa->update($siswa_data);
 
-        //Catat semuda id siswa baru
-        //ID ini kita butuhkan untuk menghitung total buku yang berhasil diimport
-        $siswa_id = [];
-
-        //looping setiap baris, mulai dari baris ke 2 (karena baris ke 1 adalah nama kolom)
-        foreach ($excels as $row) {
-            //Mebuat validasi untuk row di excel
-            //Disini kita ubah baris yand sedang di proses menjadi array
-            $validator = Validator::make($row->toArray(), $rowRules);
-
-            //Skip baris ini jika tidak valid, langsung ke baris selanjutnya
-            if($validator->fails()) continue;
-
-            //Syntax dibawah ini dieksekusi jika baris excel ini valid
-
-            //Buat siswa baru
-            $murid = Siswa::create([
-                
-                'kode_map'      => $row['kode_map'],
-                'no_un_smp'     => $row['no_un_smp'],
-                'nama_siswa'    => $row['nama_siswa'],
-                'tempat_lahir'  => $row['tempat_lahir'],
-                'tgl_lahir'     => $row['tgl_lahir'],
-                'jenis_kelamin' => $row['jenis_kelamin'],
-                'nama_ayah'     => $row['nama_ayah'],
-                'nama_ibu'      => $row['nama_ibu'],
-                'no_hp'         => $row['no_hp'],
-                'sekolah_asal'  => $row['sekolah_asal']
-            ]);
-
-            //catat id dari buku yang baru dibuat
-            array_push($siswa_id, $murid->id);
-        }
-
-        //ambil semua siswa yang baru dibuat
-        $siswa = Siswa::whereIn('id', $siswa_id)->get();
-
-        //redirect ke form jika tidak ada buku yang berhasil diimport
-        if ($siswa->count() == 0) {
-            Session::flash("flash_notification", [
-                "level"     => "danger",
-                "message"   => "Tidak ada siswa yang berhasil diimport."
-            ]);
-            return redirect()->back();
-        }
-        //set feedback
-        Session::flash("flash_notification", [
-            "level"     => "success",
-            "message"   => "Berhasil mengimport " . $siswa->count() . " siswa."
-
-        ]);
-
-        //Tampilkan index buku
-        return redirect()->route('siswa.index');
+        return redirect()->route('siswa.index')->with('success', 'Data siswa berhasil diperbarui!');
     }
 
-    public function biodata()
+    /**
+     * Remove the specified resource from storage.
+     *
+     * @param  int  $id
+     * @return \Illuminate\Http\Response
+     */
+    public function destroy($id)
     {
-        return view('biodata.create');
+        $siswa = Siswa::findorfail($id);
+        $countUser = User::where('no_induk', $siswa->no_induk)->count();
+        if ($countUser >= 1) {
+            $user = User::where('no_induk', $siswa->no_induk)->first();
+            $siswa->delete();
+            $user->delete();
+            return redirect()->back()->with('warning', 'Data siswa berhasil dihapus! (Silahkan cek trash data siswa)');
+        } else {
+            $siswa->delete();
+            return redirect()->back()->with('warning', 'Data siswa berhasil dihapus! (Silahkan cek trash data siswa)');
+        }
+    }
+
+    public function trash()
+    {
+        $siswa = Siswa::onlyTrashed()->get();
+        return view('admin.siswa.trash', compact('siswa'));
+    }
+
+    public function restore($id)
+    {
+        $id = Crypt::decrypt($id);
+        $siswa = Siswa::withTrashed()->findorfail($id);
+        $countUser = User::withTrashed()->where('no_induk', $siswa->no_induk)->count();
+        if ($countUser >= 1) {
+            $user = User::withTrashed()->where('no_induk', $siswa->no_induk)->first();
+            $siswa->restore();
+            $user->restore();
+            return redirect()->back()->with('info', 'Data siswa berhasil direstore! (Silahkan cek data siswa)');
+        } else {
+            $siswa->restore();
+            return redirect()->back()->with('info', 'Data siswa berhasil direstore! (Silahkan cek data siswa)');
+        }
+    }
+
+    public function kill($id)
+    {
+        $siswa = Siswa::withTrashed()->findorfail($id);
+        $countUser = User::withTrashed()->where('no_induk', $siswa->no_induk)->count();
+        if ($countUser >= 1) {
+            $user = User::withTrashed()->where('no_induk', $siswa->no_induk)->first();
+            $siswa->forceDelete();
+            $user->forceDelete();
+            return redirect()->back()->with('success', 'Data siswa berhasil dihapus secara permanent');
+        } else {
+            $siswa->forceDelete();
+            return redirect()->back()->with('success', 'Data siswa berhasil dihapus secara permanent');
+        }
+    }
+
+    public function ubah_foto($id)
+    {
+        $id = Crypt::decrypt($id);
+        $siswa = Siswa::findorfail($id);
+        return view('admin.siswa.ubah-foto', compact('siswa'));
+    }
+
+    public function update_foto(Request $request, $id)
+    {
+        $this->validate($request, [
+            'foto' => 'required'
+        ]);
+
+        $siswa = Siswa::findorfail($id);
+        $foto = $request->foto;
+        $new_foto = date('s' . 'i' . 'H' . 'd' . 'm' . 'Y') . "_" . $foto->getClientOriginalName();
+        $siswa_data = [
+            'foto' => 'uploads/siswa/' . $new_foto,
+        ];
+        $foto->move('uploads/siswa/', $new_foto);
+        $siswa->update($siswa_data);
+
+        return redirect()->route('siswa.index')->with('success', 'Berhasil merubah foto!');
+    }
+
+    public function view(Request $request)
+    {
+        $siswa = Siswa::OrderBy('nama_siswa', 'asc')->where('kelas_id', $request->id)->get();
+
+        foreach ($siswa as $val) {
+            $newForm[] = array(
+                'kelas' => $val->kelas->nama_kelas,
+                'no_induk' => $val->no_induk,
+                'nama_siswa' => $val->nama_siswa,
+                'jk' => $val->jk,
+                'foto' => $val->foto
+            );
+        }
+
+        return response()->json($newForm);
+    }
+
+    public function cetak_pdf(Request $request)
+    {
+        $siswa = siswa::OrderBy('nama_siswa', 'asc')->where('kelas_id', $request->id)->get();
+        $kelas = Kelas::findorfail($request->id);
+
+        $pdf = PDF::loadView('siswa-pdf', ['siswa' => $siswa, 'kelas' => $kelas]);
+        return $pdf->stream();
+        // return $pdf->stream('jadwal-pdf.pdf');
+    }
+
+    public function kelas($id)
+    {
+        $id = Crypt::decrypt($id);
+        $siswa = Siswa::where('kelas_id', $id)->OrderBy('nama_siswa', 'asc')->get();
+        $kelas = Kelas::findorfail($id);
+        return view('admin.siswa.show', compact('siswa', 'kelas'));
+    }
+
+    public function export_excel()
+    {
+        return Excel::download(new SiswaExport, 'siswa.xlsx');
+    }
+
+    public function import_excel(Request $request)
+    {
+        $this->validate($request, [
+            'file' => 'required|mimes:csv,xls,xlsx'
+        ]);
+        $file = $request->file('file');
+        $nama_file = rand() . $file->getClientOriginalName();
+        $file->move('file_siswa', $nama_file);
+        Excel::import(new SiswaImport, public_path('/file_siswa/' . $nama_file));
+        return redirect()->back()->with('success', 'Data Siswa Berhasil Diimport!');
+    }
+
+    public function deleteAll()
+    {
+        $siswa = Siswa::all();
+        if ($siswa->count() >= 1) {
+            Siswa::whereNotNull('id')->delete();
+            Siswa::withTrashed()->whereNotNull('id')->forceDelete();
+            return redirect()->back()->with('success', 'Data table siswa berhasil dihapus!');
+        } else {
+            return redirect()->back()->with('warning', 'Data table siswa kosong!');
+        }
     }
 }
