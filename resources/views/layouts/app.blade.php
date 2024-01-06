@@ -8,7 +8,7 @@
     <!-- CSRF Token -->
     <meta name="csrf-token" content="{{ csrf_token() }}">
 
-    <title>SMA Negeri 3 Tangerang</title>
+    <title>SMA Negeri 77 Lampung</title>
 
     <!-- Styles -->
     <link href="{{ asset('css/font-awesome.min.css') }}" rel='stylesheet' type='text/css'> 
@@ -35,7 +35,7 @@
 
                     <!-- Branding Image -->
                     <a class="navbar-brand" href="{{ url('/') }}">
-                        SMA Negeri 3 Tangerang
+                        SMA Negeri 77 Lampung
                     </a>
                 </div>
 

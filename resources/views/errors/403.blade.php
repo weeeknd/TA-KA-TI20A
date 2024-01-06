@@ -40,7 +40,7 @@
     <body>
         <div class="container">
             <div class="content">
-                <div class="title">:(</div>
+                <div class="title">:</div>
                 <p>Maaf, Anda tidak memiliki akses untk fitur ini.</p>
                 <p><a href="{{ url('/home') }}">Kembali ke halaman awal</a></p>
             </div>
