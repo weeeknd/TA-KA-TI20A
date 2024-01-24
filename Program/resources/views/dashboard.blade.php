@@ -59,6 +59,7 @@
 
         h2 {
             color: #fff;
+            text-align: center;
         }
 
         .card {
@@ -74,6 +75,10 @@
             color: #fff;
             padding: 1em;
             text-align: center;
+        }
+        .center-container img {
+            margin: auto; 
+            display: block; 
         }
     </style>
 
@@ -94,7 +99,11 @@
     </nav>
 
     <main>
-        <h2>Selamat datang di Dashboard IMOSY</h2>
+        <h2 >Selamat datang di Dashboard IMOSY</h2>
+        <div class="center-container">  <img src="dash.png" alt="dashboard">
+        
+        </div>
+      
 
         <div class="card">
             <h3>Data IMOSY</h3>
