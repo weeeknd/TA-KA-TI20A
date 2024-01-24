@@ -75,6 +75,7 @@
             color: #fff;
             padding: 1em;
             text-align: center;
+            height: 3em;
         }
         .center-container img {
             margin: auto; 
