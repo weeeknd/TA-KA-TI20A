@@ -22,7 +22,7 @@
         
         <!-- frame login -->
         <img src="admin.png" alt="logo admin">
-        <section id="section_frame" class="w-1/3 border-2 border-blue-900 rounded-xl p-5 bg-blue-100">
+        <section id="section_frame" class="w-1/3 border-2 border-blue-900 rounded-xl p-5 bg-blue-200">
             <!-- area judul -->
             <section id="section_judul" class="mb-5 text-center">
                 Login IMOSI
@@ -32,10 +32,10 @@
             <section id="section_input" class="flex flex-col">
                 <!-- buat komponen textfield username dan password -->
                 <input type="text" name="txt_username" id="txt_username"
-                    class="h-10 border-solid border-2 border-blue-900 rounded-xl focus:outline-none focus:ring focus:border-blue-500 mb-2.5 p-2.5" placeholder="Isi Username" onkeypress="return setFilterInput(event)" onpaste="return false" oncut="return false" oncopy="return false">
+                    class="h-10 border-solid border-2 border-blue-500 rounded-xl focus:outline-none focus:ring focus:border-blue-500 mb-2.5 p-2.5" placeholder="Isi Username" onkeypress="return setFilterInput(event)" onpaste="return false" oncut="return false" oncopy="return false">
 
                 <input type="password" name="txt_password" id="txt_password"
-                    class="h-10 border-solid border-2 border-blue-900 rounded-xl focus:outline-none focus:ring focus:border-blue-500 p-2.5" placeholder="Isi Password" onkeypress="return setFilterInput(event)" onpaste="return false" oncut="return false" oncopy="return false">
+                    class="h-10 border-solid border-2 border-blue-500 rounded-xl focus:outline-none focus:ring focus:border-blue-500 p-2.5" placeholder="Isi Password" onkeypress="return setFilterInput(event)" onpaste="return false" oncut="return false" oncopy="return false">
             </section>
             <!-- area checkbox -->
             <section id="section_checkbox" class="mt -2">

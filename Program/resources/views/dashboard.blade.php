@@ -102,7 +102,7 @@
     <main>
        
         <div class="center-container">  <img src="dash.png" alt="dashboard">
-         <h2 >Selamat datang di Dashboard IMOSY</h2>
+            <h2>SELAMAT DATANG DI DASHBOARD IMOSY, {{$isi_session}}</h2>
         </div>
       
 
