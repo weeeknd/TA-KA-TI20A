@@ -4,7 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <!-- gunakan CDN tailwind -->
+    
     <title>Dashboard</title>
+
 </head>
 <body>
     {{-- <p>Selamat Datang, {{$isi_session}}</p> --}}
@@ -82,10 +85,10 @@
 
     <nav>
         <ul>
-            <li><a href="#">Beranda</a></li>
-            <li><a href="#">Data Siswa</a></li>
-            <li><a href="#">Jadwal Kelas</a></li>
-            <li><a href="#">Nilai Siswa</a></li>
+            <li><a >Beranda</a></li>
+            <li><a >Data Siswa</a></li>
+            <li><a >Jadwal Kelas</a></li>
+            <li><a >Nilai Siswa</a></li>
             <!-- Tambahkan menu lain sesuai kebutuhan -->
         </ul>
     </nav>
